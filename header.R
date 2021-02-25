@@ -1,5 +1,5 @@
 # Constant paths --------------------------------------------------------
-DATAROOT <- '~/git/2021_Qiskitties/raw_data'
+DATAROOT <- '~/git/2021_Qiskitties'
 
 # Options ---------------------------------------------------------------
 options(scipen = 999)
@@ -16,10 +16,11 @@ path_builder <- function(path = '', root_func = NULL) {
   }
 }
 
-data <- path_builder(DATAROOT)
+data_root <- path_builder(DATAROOT)
+data      <- path_builder('raw_data', data_root)
 import    <- path_builder('import',   data_root)
 build     <- path_builder('build',    data_root)
-datasets  <- path_builder('datasets', data_root)
+int_data  <- path_builder('int_data', data_root)
 export    <- path_builder('export',   data_root)
 analysis  <- path_builder('analysis', data_root)
 
