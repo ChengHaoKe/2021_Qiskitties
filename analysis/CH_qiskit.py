@@ -107,7 +107,7 @@ enc_columns = pd.get_dummies(df_cleaned[cat_names], drop_first=True)
 df_enc = pd.concat([df_enc[num_names], enc_columns], axis=1)
 
 X = df_enc.copy()
-X = X.apply(pd.to_numeric, errors='coerce')
+# X = X.apply(pd.to_numeric, errors='coerce')
 y = df_cleaned[response_name]
 
 
@@ -226,14 +226,16 @@ feature_map = ZZFeatureMap(feature_dimension=get_feature_dimension(training_inpu
                            reps=2, entanglement='linear')
 svm = QSVM(feature_map, training_input, test_input, total_array,
            multiclass_extension=AllPairs())
-quantum_instance = QuantumInstance(backend, shots=1,
+quantum_instance = QuantumInstance(backend, shots=1024,
                                    seed_simulator=aqua_globals.random_seed,
                                    seed_transpiler=aqua_globals.random_seed)
 
 result = svm.run(quantum_instance)
-for k,v in result.items():
+for k, v in result.items():
     print(f'{k} : {v}')
 
+time0 = time.time() - start_time
+print("\nQSVM finished at: {0} seconds".format(str(round(time0, 5))))
 
 seed = 1376
 aqua_globals.random_seed = seed
@@ -248,3 +250,6 @@ result = vqc.run(QuantumInstance(BasicAer.get_backend('statevector_simulator'),
                                  shots=1024, seed_simulator=seed, seed_transpiler=seed))
 
 print('Testing accuracy: {:0.2f}'.format(result['testing_accuracy']))
+
+time0 = time.time() - start_time
+print("\nVQC finished at: {0} seconds".format(str(round(time0, 5))))
