@@ -89,7 +89,7 @@ df_enc = pd.concat([df_enc[num_names], enc_columns], axis=1)
 
 df_enc.head()
 
-
+df_enc = df_enc.dropna()
 X = df_enc.copy()
 y = df_cleaned[response_name]
 
