@@ -50,7 +50,7 @@ df_cleaned = df.dropna()
 
 # Drop location variables
 df_cleaned = df_cleaned.drop(['name', 'date', 'citylist.1', 'Geographic_Area.1', 'City.1',
-                              'citylist', 'lencity', 'state'], axis=1)
+                              'citylist', 'lencity', 'state', 'Geographic_Area', 'manner_of_death'], axis=1)
 
 df_cleaned['Median_Income'] = pd.to_numeric(df_cleaned['Median Income'], errors='coerce')
 df_cleaned['poverty_rate'] = pd.to_numeric(df_cleaned['poverty_rate'], errors='coerce')
@@ -71,10 +71,11 @@ print('Final number of killing cases:', df_cleaned['id'].nunique())
 df_cleaned = df_cleaned.drop(['id'], axis=1)
 
 # Response
-response_name = 'threat_level'
-# response_name = 'threat'
+# response_name = 'threat_level'
+response_name = 'threat'
 print(df_cleaned['threat_level'].value_counts())
 print(df_cleaned['threat'].value_counts())
+df_cleaned = df_cleaned.drop(['threat_level'], axis=1)
 
 
 # One hot encoding
