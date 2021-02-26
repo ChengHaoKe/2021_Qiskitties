@@ -22,6 +22,7 @@ from qiskit.aqua.components.feature_maps import RawFeatureVector
 from qiskit.circuit.library import TwoLocal
 import qiskit
 import os
+import time
 print(qiskit.__version__)
 
 
@@ -37,6 +38,8 @@ print(os.getcwd())
 seed = 10599
 aqua_globals.random_seed = seed
 
+# start time
+start_time = time.time()
 
 df = pd.read_csv('int_data/CH_data.csv')
 
@@ -73,6 +76,8 @@ print(df_cleaned['threat'].value_counts())
 enc = OneHotEncoder(handle_unknown='ignore')
 
 df_enc = df_cleaned.copy()
+# drop NA again
+df_enc = df_enc.dropna()
 
 # Drop response column since it is not a physical attribute of the car
 df_enc = df_enc.drop([response_name], axis=1)
@@ -89,7 +94,6 @@ df_enc = pd.concat([df_enc[num_names], enc_columns], axis=1)
 
 df_enc.head()
 
-df_enc = df_enc.dropna()
 X = df_enc.copy()
 y = df_cleaned[response_name]
 
@@ -221,3 +225,6 @@ result = vqc.run(QuantumInstance(BasicAer.get_backend('statevector_simulator'),
                                  shots=2, seed_simulator=seed, seed_transpiler=seed))
 
 print('Testing accuracy: {:0.2f}'.format(result['testing_accuracy']))
+
+time0 = time.time() - start_time
+print("\nFunction ran for: {0} seconds".format(str(round(time0, 5))))
