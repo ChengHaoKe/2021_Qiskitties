@@ -1,13 +1,13 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler
 from qiskit import BasicAer
-from qiskit.circuit.library import ZZFeatureMap
+# from qiskit.circuit.library import ZZFeatureMap
 from qiskit.aqua import QuantumInstance, aqua_globals
 from qiskit.aqua.algorithms import QSVM
 from qiskit.aqua.utils import split_dataset_to_data_and_labels, map_label_to_class_name
@@ -61,12 +61,19 @@ for r in racecol:
     df_cleaned[r] = df_cleaned[r].apply(lambda x: float(x) if x != '' else np.nan)
 
 
+# recode true false
+df_cleaned['body_camera'] = df_cleaned['body_camera'].astype(int)
+df_cleaned['signs_of_mental_illness'] = df_cleaned['signs_of_mental_illness'].astype(int)
+
 # recode threat level
 df_cleaned.drop(['Median Income'], axis=1, inplace=True)
 df_cleaned['threat'] = df_cleaned['threat_level'].replace({'undetermined': 'other'})
 
 # drop NA again
 df_cleaned = df_cleaned.dropna()
+# remove duplicates keep first
+df_cleaned = df_cleaned.drop_duplicates(subset=['id'], keep='first')
+
 print('Final number of killing cases:', df_cleaned['id'].nunique())
 df_cleaned = df_cleaned.drop(['id'], axis=1)
 
@@ -76,7 +83,6 @@ response_name = 'threat'
 print(df_cleaned['threat_level'].value_counts())
 print(df_cleaned['threat'].value_counts())
 df_cleaned = df_cleaned.drop(['threat_level'], axis=1)
-
 
 # One hot encoding
 enc = OneHotEncoder(handle_unknown='ignore')
@@ -96,9 +102,8 @@ enc_columns = pd.get_dummies(df_cleaned[cat_names], drop_first=True)
 # Concatenate encoded columns to numerical columns
 df_enc = pd.concat([df_enc[num_names], enc_columns], axis=1)
 
-df_enc.head()
-
 X = df_enc.copy()
+X = X.apply(pd.to_numeric, errors='coerce')
 y = df_cleaned[response_name]
 
 
@@ -120,7 +125,7 @@ feature_map = ZZFeatureMap(feature_dimension=feature_dim, reps=2, entanglement='
 qsvm = QSVM(feature_map, training_input, test_input, datapoints[0])
 
 backend = BasicAer.get_backend('qasm_simulator')
-quantum_instance = QuantumInstance(backend, shots=2, seed_simulator=seed, seed_transpiler=seed)
+quantum_instance = QuantumInstance(backend, shots=1024, seed_simulator=seed, seed_transpiler=seed)
 
 result = qsvm.run(quantum_instance)
 
@@ -154,23 +159,24 @@ for k, v in result.items():
     print(f'{k} : {v}')
 
 
-feature_dim = np.shape(X)[1]
-
-# Train test split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
-
-training_input = X_train.copy()
-test_input = X_test.copy()
-
-total_array = np.concatenate([test_input[k] for k in test_input])
+# feature_dim = np.shape(X)[1]
+#
+# # Train test split
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
+#
+# training_input = X_train.copy()
+# test_input = X_test.copy()
+#
+# total_array = np.concatenate([test_input[k] for k in test_input])
 
 class_labels = y.unique()
 training_size = 100
 test_size = 25
-
+n = 8
 
 sample_train, sample_test, label_train, label_test = \
     train_test_split(X, y, test_size=0.2, random_state=7)
+total_array = np.concatenate([sample_test[k] for k in sample_test])
 
 # Now we standardize for gaussian around 0 with unit variance
 std_scale = StandardScaler().fit(sample_train)
@@ -188,47 +194,53 @@ minmax_scale = MinMaxScaler((-1, 1)).fit(samples)
 sample_train = minmax_scale.transform(sample_train)
 sample_test = minmax_scale.transform(sample_test)
 
-
 training_input = {key: (sample_train[label_train == key, :])[:training_size]
                   for k, key in enumerate(class_labels)}
 test_input = {key: (sample_test[label_test == key, :])[:test_size]
               for k, key in enumerate(class_labels)}
 
-aqua_globals.random_seed = 10598
+# aqua_globals.random_seed = 10598
+#
+# backend = BasicAer.get_backend('qasm_simulator')
+# feature_map = ZZFeatureMap(feature_dimension=get_feature_dimension(training_input),
+#                            reps=2, entanglement='linear')
+# svm = QSVM(feature_map, training_input, test_input, total_array,
+#            multiclass_extension=AllPairs())
+# quantum_instance = QuantumInstance(backend, shots=1024,
+#                                    seed_simulator=aqua_globals.random_seed,
+#                                    seed_transpiler=aqua_globals.random_seed)
+#
+# result = svm.run(quantum_instance)
+# for k, v in result.items():
+#     print(f'{k} : {v}')
+
+
+aqua_globals.random_seed = 1376
 
 backend = BasicAer.get_backend('qasm_simulator')
 feature_map = ZZFeatureMap(feature_dimension=get_feature_dimension(training_input),
                            reps=2, entanglement='linear')
 svm = QSVM(feature_map, training_input, test_input, total_array,
            multiclass_extension=AllPairs())
-quantum_instance = QuantumInstance(backend, shots=1024,
+quantum_instance = QuantumInstance(backend, shots=1,
                                    seed_simulator=aqua_globals.random_seed,
                                    seed_transpiler=aqua_globals.random_seed)
 
 result = svm.run(quantum_instance)
-for k, v in result.items():
+for k,v in result.items():
     print(f'{k} : {v}')
 
 
 seed = 1376
 aqua_globals.random_seed = seed
 
-# Use Wine data set for training and test data
-feature_dim = 4  # dimension of each data point
-_, training_input, test_input, _ = wine(training_size=12,
-                                        test_size=4,
-                                        n=feature_dim)
-
-feature_map = RawFeatureVector(feature_dimension=feature_dim)
-vqc = VQC(COBYLA(maxiter=100),
+feature_map = RawFeatureVector(feature_dimension=n)
+vqc = VQC(COBYLA(maxiter=10),
           feature_map,
           TwoLocal(feature_map.num_qubits, ['ry', 'rz'], 'cz', reps=3),
           training_input,
           test_input)
 result = vqc.run(QuantumInstance(BasicAer.get_backend('statevector_simulator'),
-                                 shots=2, seed_simulator=seed, seed_transpiler=seed))
+                                 shots=1024, seed_simulator=seed, seed_transpiler=seed))
 
 print('Testing accuracy: {:0.2f}'.format(result['testing_accuracy']))
-
-time0 = time.time() - start_time
-print("\nFunction ran for: {0} seconds".format(str(round(time0, 5))))
