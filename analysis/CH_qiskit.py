@@ -106,10 +106,6 @@ enc_columns = pd.get_dummies(df_cleaned[cat_names], drop_first=True)
 # Concatenate encoded columns to numerical columns
 df_enc = pd.concat([df_enc[num_names], enc_columns], axis=1)
 
-X = df_enc.copy()
-# X = X.apply(pd.to_numeric, errors='coerce')
-y = df_cleaned[response_name]
-
 
 feature_dim = 2
 sample_total, training_input, test_input, class_labels = ad_hoc_data(
@@ -142,7 +138,7 @@ predicted_labels = result["predicted_labels"]
 print(f'  success rate: {100 * np.count_nonzero(predicted_labels == datapoints[1]) / len(predicted_labels)}%')
 
 n = 2  # dimension of each data point
-sample_Total, training_input, test_input, class_labels = wine(training_size=24,
+sample_Total, training_input, test_input, class_labels = wine(training_size=50,
                                                               test_size=6, n=n, plot_data=False)
 temp = [test_input[k] for k in test_input]
 total_array = np.concatenate(temp)
@@ -163,7 +159,7 @@ try:
     for k, v in result.items():
         print(f'{k} : {v}')
 except Exception as e:
-    print('VQC error', e)
+    print('QSVM error', e)
 
 
 # feature_dim = np.shape(X)[1]
@@ -176,35 +172,45 @@ except Exception as e:
 #
 # total_array = np.concatenate([test_input[k] for k in test_input])
 
-class_labels = y.unique()
-training_size = 100
-test_size = 25
-n = 8
+def traintest(df0, tonum=False):
+    df_enc = df0
 
-sample_train, sample_test, label_train, label_test = \
-    train_test_split(X, y, test_size=0.2, random_state=7)
-total_array = np.concatenate([sample_test[k] for k in sample_test])
+    X = df_enc.copy()
+    if tonum:
+        X = X.apply(pd.to_numeric, errors='coerce')
+    y = df_cleaned[response_name]
 
-# Now we standardize for gaussian around 0 with unit variance
-std_scale = StandardScaler().fit(sample_train)
-sample_train = std_scale.transform(sample_train)
-sample_test = std_scale.transform(sample_test)
+    class_labels = y.unique()
+    training_size = 100
+    test_size = 25
+    n = 8
 
-# Now reduce number of features to number of qubits
-pca = PCA(n_components=n).fit(sample_train)
-sample_train = pca.transform(sample_train)
-sample_test = pca.transform(sample_test)
+    sample_train, sample_test, label_train, label_test = \
+        train_test_split(X, y, test_size=0.2, random_state=7)
+    total_array = np.concatenate([sample_test[k] for k in sample_test])
 
-# Scale to the range (-1,+1)
-samples = np.append(sample_train, sample_test, axis=0)
-minmax_scale = MinMaxScaler((-1, 1)).fit(samples)
-sample_train = minmax_scale.transform(sample_train)
-sample_test = minmax_scale.transform(sample_test)
+    # Now we standardize for gaussian around 0 with unit variance
+    std_scale = StandardScaler().fit(sample_train)
+    sample_train = std_scale.transform(sample_train)
+    sample_test = std_scale.transform(sample_test)
 
-training_input = {key: (sample_train[label_train == key, :])[:training_size]
+    # Now reduce number of features to number of qubits
+    pca = PCA(n_components=n).fit(sample_train)
+    sample_train = pca.transform(sample_train)
+    sample_test = pca.transform(sample_test)
+
+    # Scale to the range (-1,+1)
+    samples = np.append(sample_train, sample_test, axis=0)
+    minmax_scale = MinMaxScaler((-1, 1)).fit(samples)
+    sample_train = minmax_scale.transform(sample_train)
+    sample_test = minmax_scale.transform(sample_test)
+
+    training_input = {key: (sample_train[label_train == key, :])[:training_size]
+                      for k, key in enumerate(class_labels)}
+    test_input = {key: (sample_test[label_test == key, :])[:test_size]
                   for k, key in enumerate(class_labels)}
-test_input = {key: (sample_test[label_test == key, :])[:test_size]
-              for k, key in enumerate(class_labels)}
+    return training_input, test_input, total_array
+
 
 # aqua_globals.random_seed = 10598
 #
@@ -220,6 +226,7 @@ test_input = {key: (sample_test[label_test == key, :])[:test_size]
 # result = svm.run(quantum_instance)
 # for k, v in result.items():
 #     print(f'{k} : {v}')
+training_input, test_input, total_array = traintest(df_enc, tonum=True)
 
 try:
     aqua_globals.random_seed = 1376
@@ -242,6 +249,8 @@ except Exception as e:
 time0 = time.time() - start_time
 print("\nQSVM finished at: {0} seconds".format(str(round(time0, 5))))
 
+training_input, test_input, total_array = traintest(df_enc, tonum=False)
+
 try:
     seed = 1376
     aqua_globals.random_seed = seed
@@ -254,7 +263,7 @@ try:
               test_input)
     result = vqc.run(QuantumInstance(BasicAer.get_backend('statevector_simulator'),
                                      shots=1024, seed_simulator=seed, seed_transpiler=seed))
-
+    print('VQC:')
     print('Testing accuracy: {:0.2f}'.format(result['testing_accuracy']))
 except Exception as e:
     print('VQC error', e)
