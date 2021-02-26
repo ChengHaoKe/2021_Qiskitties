@@ -13,3 +13,7 @@ U.S. Census Bureau data on poverty rate, median household income, and racial dem
 - Cheng Hao Ke  (ChengHaoKe)
 - Michael Faulkner  (Michael-Faulkner)
 - Brian Lewis  (brianthomaslewis)
+
+  
+Hackathon link:  
+https://github.com/qiskit-community/northwestern-hackathon

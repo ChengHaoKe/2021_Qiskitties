@@ -270,3 +270,6 @@ except Exception as e:
 
 time0 = time.time() - start_time
 print("\nVQC finished at: {0} seconds".format(str(round(time0, 5))))
+
+# QSVM 2 error object of type 'numpy.float64' has no len()
+# VQC error Unexpected feature vector dimension.
