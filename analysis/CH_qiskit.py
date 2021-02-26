@@ -100,7 +100,8 @@ sample_total, training_input, test_input, class_labels = ad_hoc_data(
     test_size=10,
     n=feature_dim,
     gap=0.3,
-    plot_data=True
+    # plot_data=True
+    plot_data=False
 )
 extra_test_data = sample_ad_hoc_data(sample_total, 10, n=feature_dim)
 datapoints, class_to_label = split_dataset_to_data_and_labels(extra_test_data)
@@ -125,7 +126,7 @@ print(f'  success rate: {100 * np.count_nonzero(predicted_labels == datapoints[1
 
 n = 2  # dimension of each data point
 sample_Total, training_input, test_input, class_labels = wine(training_size=24,
-                                                              test_size=6, n=n, plot_data=True)
+                                                              test_size=6, n=n, plot_data=False)
 temp = [test_input[k] for k in test_input]
 total_array = np.concatenate(temp)
 
