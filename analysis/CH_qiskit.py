@@ -28,7 +28,7 @@ print(qiskit.__version__)
 
 cwd = os.getcwd()
 print(cwd)
-if not '2021_Qiskitties' in cwd:
+if '2021_Qiskitties' not in cwd:
     os.chdir('2021_Qiskitties')
 elif not cwd.endswith('2021_Qiskitties'):
     os.chdir('..')
@@ -49,7 +49,7 @@ print(df.info())
 df_cleaned = df.dropna()
 
 # Drop location variables
-df_cleaned = df_cleaned.drop(['id', 'name', 'date', 'citylist.1', 'Geographic_Area.1', 'City.1',
+df_cleaned = df_cleaned.drop(['name', 'date', 'citylist.1', 'Geographic_Area.1', 'City.1',
                               'citylist', 'lencity', 'state'], axis=1)
 
 df_cleaned['Median_Income'] = pd.to_numeric(df_cleaned['Median Income'], errors='coerce')
@@ -65,6 +65,11 @@ for r in racecol:
 df_cleaned.drop(['Median Income'], axis=1, inplace=True)
 df_cleaned['threat'] = df_cleaned['threat_level'].replace({'undetermined': 'other'})
 
+# drop NA again
+df_cleaned = df_cleaned.dropna()
+print('Final number of killing cases:', df_cleaned['id'].nunique())
+df_cleaned = df_cleaned.drop(['id'], axis=1)
+
 # Response
 response_name = 'threat_level'
 # response_name = 'threat'
@@ -76,8 +81,6 @@ print(df_cleaned['threat'].value_counts())
 enc = OneHotEncoder(handle_unknown='ignore')
 
 df_enc = df_cleaned.copy()
-# drop NA again
-df_enc = df_enc.dropna()
 
 # Drop response column since it is not a physical attribute of the car
 df_enc = df_enc.drop([response_name], axis=1)
