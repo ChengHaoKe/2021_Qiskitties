@@ -15,8 +15,51 @@ deaths  <- read_csv(header$data("police_killings.csv"))
 census <- full_join(hh_inc, poverty) %>% 
   full_join(hs) %>% 
   full_join(race) %>% 
-  clean_names()
+  clean_names() 
 
+unique_census <- census %>% 
+  select(city, geographic_area) %>% 
+  mutate(location = paste0(city,", ", geographic_area)) %>% 
+  distinct(location)
+
+# Geocode census and killings data ----------------------------------------
+
+# library(ggmap)
+
+# locations_df <- mutate_geocode(joined, place)
+
+# write_csv(locations_df, header$int_data("geocoded_deaths.csv"))
+
+# census_coords <- geocode(unique_census$location, output = "more")
+
+# write_csv(census_coords, header$int_data("census_coords.csv"))
+
+# Join census data with killings data -------------------------------------
+
+census2 <- census %>% 
+  mutate(city2 = str_replace_all(city, "\\sCDP$", ""),
+         city3 = str_replace_all(city2, "\\scity$|\\scity and borough$|\\scity and town$", ""),
+         city4 = str_replace_all(city3, "\\stown$", ""),
+         city5 = str_replace_all(city4, "\\sborough$|\\sborough.*", ""),
+         city6 = str_replace_all(city5, "\\svillage.*", "")) %>% 
+  select(-c(city, city2, city3, city4, city5)) %>% 
+  rename(city = city6,
+         state = geographic_area)
+
+joined <- deaths %>% left_join(census2) %>% 
+  filter(is.na(share_black)) %>% 
+  distinct(city, state) %>% 
+  mutate(place = paste0(city, ", ", state))
+
+census_w_coords <- census %>% 
+  bind_cols(census_coords)
+
+deaths2 <- deaths %>% 
+  mutate(place = paste0(city, ", ", state)) %>% 
+  left_join(locations_df) %>% 
+  filter(!is.na(lon)) %>% 
+  left_join(census_w_coords, by = c("lon", "lat"))
+  
 # write_csv(census, header$int_data("census_joined.csv"))
 
 # Get killings locations --------------------------------------------------
@@ -51,21 +94,3 @@ joined <- deaths %>% left_join(census2) %>%
   filter(is.na(share_black)) %>% 
   distinct(city, state) %>% 
   mutate(place = paste0(city, ", ", state))
-
-# Geocoding ---------------------------------------------------------------
-
-library(ggmap)
-locations_df <- mutate_geocode(joined, place)
-
-# write_csv(locations_df, header$int_data("geocoded_deaths.csv"))
-# 
-# test3  <- geocode(c("Indianapolis", "Santa Barbara"), output = "more")
-# test2 <- geocode("Indianapolis", output = "all")
-
-unique_census <- census %>% 
-  select(city, geographic_area) %>% 
-  mutate(location = paste0(city,", ", geographic_area)) %>% 
-  distinct(location)
-
-census_coords <- geocode(unique_census$location, output = "more")
-
