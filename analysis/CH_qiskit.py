@@ -74,8 +74,12 @@ df_cleaned = df_cleaned.dropna()
 # remove duplicates keep first
 df_cleaned = df_cleaned.drop_duplicates(subset=['id'], keep='first')
 
+# recode armed
+df_cleaned['arms'] = np.where(df_cleaned['armed'].isin(['gun', 'knife', 'unarmed', 'vehicle']), df_cleaned['armed'],
+                              'other')
+
 print('Final number of killing cases:', df_cleaned['id'].nunique())
-df_cleaned = df_cleaned.drop(['id'], axis=1)
+df_cleaned = df_cleaned.drop(['id', 'armed'], axis=1)
 
 # Response
 # response_name = 'threat_level'
@@ -150,7 +154,7 @@ feature_map = ZZFeatureMap(feature_dimension=get_feature_dimension(training_inpu
                            reps=2, entanglement='linear')
 svm = QSVM(feature_map, training_input, test_input, total_array,
            multiclass_extension=AllPairs())
-quantum_instance = QuantumInstance(backend, shots=2,
+quantum_instance = QuantumInstance(backend, shots=1024,
                                    seed_simulator=aqua_globals.random_seed,
                                    seed_transpiler=aqua_globals.random_seed)
 
